@@ -4,7 +4,6 @@
 # importing all necessary libraries
 import numpy as np
 import random
-from time import sleep
 
 
 # Creates an empty board
