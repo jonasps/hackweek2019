@@ -9,8 +9,7 @@ import random
 
 
 class Player:
-    def __init__(self, indicator, player_type='random'):
-        self.player_type = player_type
+    def __init__(self, indicator):
         self.indicator = indicator
 
     # Select a random place for the player
@@ -21,8 +20,7 @@ class Player:
 
 
 class Human(Player):
-    def __init__(self, indicator, player_type='human'):
-        self.player_type = player_type
+    def __init__(self, indicator):
         self.indicator = indicator
         self.action = ()
 
@@ -122,6 +120,7 @@ def play_game(player1=Player(1), player2=Player(2)):
             counter += 1
             winner = evaluate(board, [player1, player2])
             if winner != 0:
+                print(board)
                 break
     return (winner)
 
