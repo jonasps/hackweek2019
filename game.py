@@ -5,32 +5,9 @@
 import numpy as np
 import random
 
+from agent import Agent, Player, Human
+
 # Creates an empty board
-
-
-class Player:
-    def __init__(self, indicator):
-        self.indicator = indicator
-
-    # Select a random place for the player
-
-    def choose_action(self, board):
-        selection = possibilities(board)
-        return random.choice(selection)
-
-
-class Human(Player):
-    def __init__(self, indicator):
-        self.indicator = indicator
-        self.action = ()
-
-    def choose_action(self, board):
-        selection = possibilities(board)
-        while self.action not in selection:
-            action_raw = input("make a choice, type x,y: ").split(',')
-            self.action = tuple(int(cordinate) for cordinate in action_raw)
-            print(self.action in selection)
-        return self.action
 
 
 def create_board():
@@ -110,12 +87,19 @@ def evaluate(board, playerlist):
 
 
 # Main function to start the game
-def play_game(player1=Player(1), player2=Player(2)):
+def play_game(player1, player2):
     board, winner, counter = create_board(), 0, 1
     while winner == 0:
         print(board)
         for player in [player1, player2]:
             action = player.choose_action(board)
+            # handle choosen action
+            print('counter: ', counter)
+            while action not in possibilities(board):
+                player.bad_action()
+                print(player.choose_action(board))
+                action = player.choose_action(board)
+
             board[action] = player.indicator
             counter += 1
             winner = evaluate(board, [player1, player2])
@@ -127,4 +111,5 @@ def play_game(player1=Player(1), player2=Player(2)):
 
 # Driver Code
 human = Human(8)
-print("Winner is: " + str(play_game(human, Player(1))))
+agent = Agent(0, 3, True)
+print("Winner is: " + str(play_game(human, agent)))
