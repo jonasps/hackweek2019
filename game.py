@@ -26,7 +26,7 @@ def possibilities(board):
     return (l)
 
 
-def human_place(board, player):
+def human_action(board, player):
     selection = possibilities(board)
     action_raw = input("make a choice, type x,y: ").split(',')
     action = tuple(int(cordinate) for cordinate in action_raw)
@@ -111,7 +111,7 @@ def play_game():
     while winner == 0:
         for player in [1, 2]:
             if player == 1:
-                human_place(board, player)
+                human_action(board, player)
             else:
                 board = random_place(board, player)
             print("Board after " + str(counter) + " move")
