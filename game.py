@@ -5,8 +5,9 @@
 import numpy as np
 import random
 
-
 # Creates an empty board
+
+
 def create_board():
     return (np.array([[0, 0, 0],
                       [0, 0, 0],
@@ -25,10 +26,20 @@ def possibilities(board):
     return (l)
 
 
+def human_place(board, player):
+    selection = possibilities(board)
+    action_raw = input("make a choice, type x,y: ").split(',')
+    action = tuple(int(cordinate) for cordinate in action_raw)
+    print(action)
+    board[action] = player
+    return (board)
+
+
 # Select a random place for the player
 def random_place(board, player):
     selection = possibilities(board)
     current_loc = random.choice(selection)
+    print(current_loc)
     board[current_loc] = player
     return (board)
 
@@ -99,7 +110,10 @@ def play_game():
 
     while winner == 0:
         for player in [1, 2]:
-            board = random_place(board, player)
+            if player == 1:
+                human_place(board, player)
+            else:
+                board = random_place(board, player)
             print("Board after " + str(counter) + " move")
             print(board)
             counter += 1
