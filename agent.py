@@ -101,6 +101,14 @@ class Agent(Player):
             print('Agent chosen action: ', chosenAction)
         return chosenAction
     
+
+    def save_qtable(self):
+        np.savetxt('{}.csv'.format(self.indicator), np.around(np.column_stack(
+            self.qTable), decimals=5), fmt='%.2f', delimiter=',')
+
+    def load_qtable(self, indicator):
+        self.qTable = np.loadtxt('{}.csv'.format(indicator), delimiter=',')
+
     def bad_action(self):
         lastMove = self.moves.pop()
         self.qTable[lastMove[0]][lastMove[1]] = self.q_value_for(lastMove) - 1000
@@ -124,7 +132,12 @@ class Agent(Player):
         return self.qTable[move[0]][move[1]]
 
     def _normalizeIndicators(self, x):
-        return x if (x == 0 or x == self.indicator) else 9
+        if x == 0:
+            return x
+        elif x == self.indicator:
+             return 1
+        else:
+            return 9
 
     def _setNewState(self, stateHash):
         #if self.debug:
