@@ -150,18 +150,29 @@ def train(iterations, player1, player2):
     if player1.wins > player2.wins:
         player1.wins = 0
         player1.draws = 0
+        player1.save_qtable()
         return player1
     else:
         player2.wins = 0
         player2.draws = 0
+        player2.save_qtable()
         return player2
 
+def test_agent(agent):
+    human = Human(8)
+    agent.debug = True
+    for i in range(700):
+        print("Winner is: " + str(play_game(agent, human, False)))
+        print("Winner is: " + str(play_game(human, agent, False)))
+
 # Driver Code
-human = Human(8)
+best_so_far = Agent(2, 0, 1, False)
+best_so_far.load_qtable('best_so_far')
+test_agent(best_so_far)
 agent = Agent(1, 0.6, 0.4, False)
 agent2 = Agent(2, 0.7, 0.2, False)
-agent3 = Agent(1, 0.8, 0.3, False)
-agent4 = Agent(2, 0.9, 0.1, False)
+agent3 = Agent(3, 0.8, 0.3, False)
+agent4 = Agent(4, 0.9, 0.1, False)
 winner1 = train(10000, agent, agent2)
 winner2 = train(10000, agent3, agent4)
 winner3 = train(10000, winner1, winner2)

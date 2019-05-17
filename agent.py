@@ -110,7 +110,8 @@ class Agent(Player):
             self.qTable), decimals=5), fmt='%.2f', delimiter=',')
 
     def load_qtable(self, indicator):
-        self.qTable = np.loadtxt('{}.csv'.format(indicator), delimiter=',')
+        self.qTable = np.loadtxt('{}.csv'.format(indicator), delimiter=',').transpose()
+        self.state_observations = len(self.qTable)
 
     def bad_action(self):
         lastMove = self.moves.pop()
@@ -146,10 +147,10 @@ class Agent(Player):
             return 9
 
     def _setNewState(self, stateHash):
-        #if self.debug:
-        #print('new state found: ', stateHash)
         self.stateIndexMap[stateHash] = self.state_observations
         new_row = np.zeros(shape = [1, len(self.action_space)])
+        print('q-table actions: \n', len(self.qTable[0]))
+        print('new row actions: \n', len(new_row[0]))
         self.qTable = np.append(self.qTable, new_row, axis=0)
         self.state_observations +=1
 
