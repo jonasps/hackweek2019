@@ -76,12 +76,9 @@ class Agent(Player):
 
     def _future_simulated_reward(self, action, board):
         future_board = np.array(board, copy=True)
-        
-        if action in future_board:
+
+        if future_board[action] == 0:
             # we make our action
-            print(future_board)
-            print(action)
-            print(self.indicator)
             future_board[action] = self.indicator
 
             # we make our opponents predicted action (based on our knowledge)
@@ -93,13 +90,12 @@ class Agent(Player):
             
             # our future predicted next state 
             futureHash = self._hash_array(future_board)
-            
             if futureHash in self.stateIndexMap:
-                print('futureHash in ')
+
                 # we find our biggest q-value in our future state
                 stateIndex = self.stateIndexMap[futureHash]
                 qList = self.qTable[stateIndex].tolist()
-                print('qList: ', qList)
+
                 return np.amax(qList)
         return 0
 
@@ -132,15 +128,15 @@ class Agent(Player):
         chosenAction = ()
         actionIndex = 99
 
-        stateIndex = self.stateIndexMap[self._hashBoardState(board)]
+        stateIndex = self.stateIndexMap[self._process_board_state(board)]
         if  random.random() > self.epsilon:
             # action from Q-table
             qList = self.qTable[stateIndex].tolist()
             action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
             
             for a in action_candidates:
-                print(a)
-                self._future_simulated_reward(a, board)
+                self._future_simulated_reward(
+                    self.action_space[a], board)
             
             if self.debug:
                 print('exploit')
