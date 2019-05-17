@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import hashlib
+import pickle
 
 # Check for empty places on board
 
@@ -105,13 +106,23 @@ class Agent(Player):
         return chosenAction
     
 
-    def save_qtable(self):
-        np.savetxt('{}.csv'.format(self.indicator), np.around(np.column_stack(
+    def save_agent(self, file_name=''):
+        if not file_name:
+            file_name = str(self.indicator)
+       
+        np.savetxt('qtable-{}.csv'.format(file_name), np.around(np.column_stack(
             self.qTable), decimals=5), fmt='%.2f', delimiter=',')
+        
+        with open('index-map-{}.pkl'.format(file_name), 'wb') as f:
+            pickle.dump(self.stateIndexMap, f, pickle.HIGHEST_PROTOCOL)
 
-    def load_qtable(self, indicator):
-        self.qTable = np.loadtxt('{}.csv'.format(indicator), delimiter=',').transpose()
+    def load_agent(self, indicator):
+        self.qTable = np.loadtxt('qtable-{}.csv'.format(
+            indicator), delimiter=',').transpose()
         self.state_observations = len(self.qTable)
+
+        with open('index-map-{}.pkl'.format(indicator), 'rb') as f:
+            self.stateIndexMap = pickle.load(f)
 
     def bad_action(self):
         lastMove = self.moves.pop()
@@ -142,15 +153,15 @@ class Agent(Player):
         if x == 0:
             return x
         elif x == self.indicator:
-             return 1
+             return -1
         else:
             return 9
 
     def _setNewState(self, stateHash):
         self.stateIndexMap[stateHash] = self.state_observations
         new_row = np.zeros(shape = [1, len(self.action_space)])
-        print('q-table actions: \n', len(self.qTable[0]))
-        print('new row actions: \n', len(new_row[0]))
+        # print('q-table actions: \n', len(self.qTable[0]))
+        # print('new row actions: \n', len(new_row[0]))
         self.qTable = np.append(self.qTable, new_row, axis=0)
         self.state_observations +=1
 
