@@ -167,9 +167,9 @@ def test_agent(agent):
         print("Winner is: " + str(play_game(human, agent, False)))
 
 # Driver Code
-best_so_far = Agent(2, 0, 1, False)
-best_so_far.load_agent(4)
-test_agent(best_so_far)
+#best_so_far = Agent(2, 0, 1, False)
+#best_so_far.load_agent(4)
+#test_agent(best_so_far)
 
 
 agent = Agent(1, 0.6, 0.4, False)
