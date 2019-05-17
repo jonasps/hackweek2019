@@ -3,6 +3,7 @@
 
 # importing all necessary libraries
 import numpy as np
+import matplotlib.pyplot as plt
 import random
 
 from agent import Agent, Player, Human
@@ -117,7 +118,7 @@ def play_game(player1, player2, training):
             winner = evaluate(board, [player1, player2])
             if winner != 0:
                 if not training:
-                    print('winning boardState: \n', board)
+                    print('last boardState: \n', board)
                 if winner == player1.indicator:
                     player1.end_game_evaluation(100)
                     player1.wins += 1
@@ -127,24 +128,24 @@ def play_game(player1, player2, training):
                     player2.end_game_evaluation(100)
                     player2.wins += 1
                 else:
-                    player1.end_game_evaluation(0)
-                    player2.end_game_evaluation(0)
+                    player1.end_game_evaluation(1)
+                    player2.end_game_evaluation(1)
                     player1.draws += 1
                     player2.draws += 1
                 break
-    return (winner)
+    return 'player{} won the game!'.format(winner) if winner > 0 else 'Game is a tie!'
 
 def train(iterations, player1, player2):
     player1.debug = False
     player2.debug = False
-    for i in range(30000):
+    for i in range(iterations):
         play_game(player1, player2, True)
         play_game(player2, player1, True)
         if i % 1000 == 0:
             print(i)
-            print('agent1 wins: ' + str(player1.wins),
-                'agent2 wins: ' + str(player2.wins))
-            print('draws ' + str(player1.draws))
+            print('agent{} wins: {}'.format(player1.indicator, str(player1.wins)),
+                  'agent{} wins: {}'.format(player2.indicator, str(player2.wins)))
+            print('draws {}'.format(str(player1.draws)))
     player1.debug = True
     player2.debug = True
     if player1.wins > player2.wins:
@@ -161,21 +162,34 @@ def train(iterations, player1, player2):
 def test_agent(agent):
     human = Human(8)
     agent.debug = True
-    agent.set_epsilon(1)
+    agent.epsilon = 0
     for i in range(700):
-        print("Winner is: " + str(play_game(agent, human, False)))
-        print("Winner is: " + str(play_game(human, agent, False)))
+        print(play_game(human, agent, False))
+        print(play_game(agent, human, False))
 
 # Driver Code
-#best_so_far = Agent(2, 0, 1, False)
-#best_so_far.load_agent(4)
-#test_agent(best_so_far)
+best_so_far = Agent(10, 0, 1, False)
+best_so_far.load_agent(10)
+test_agent(best_so_far)
 
+agent = Agent(1, 0.6, 1)
+agent2 = Agent(2, 0.7, 1)
+agent3 = Agent(3, 0.8, 1)
+agent4 = Agent(4, 0.9, 1)
+agent10 = Agent(10, 0.7, 1)
+agent11 = Agent(11, 0.8, 1)
+agent12 = Agent(12, 0.9, 1)
+agent13 = Agent(13, 1, 1)
+semi1 = train(5000, agent, agent2)
+semi2 = train(5000, agent3, agent4)
+semi3 = train(5000, agent10, agent11)
+semi4 = train(5000, agent12, agent13)
+finalist1 = train(10000, semi1, semi2)
+finalist2 = train(10000, semi3, semi4)
+winner = train(50000, finalist1, finalist2)
+plt.plot(winner.epsilonHistory)
+print('epsilon len: ', len(winner.epsilonHistory))
+plt.ylabel('epsilon value')
+plt.show()
 
-agent = Agent(1, 0.6, 0.4, False)
-agent2 = Agent(2, 0.7, 0.2, False)
-agent3 = Agent(3, 0.8, 0.3, False)
-agent4 = Agent(4, 0.9, 0.1, False)
-winner1 = train(10000, agent, agent2)
-winner2 = train(10000, agent3, agent4)
-winner3 = train(10000, winner1, winner2)
+test_agent(winner)
