@@ -55,21 +55,21 @@ class Agent(Player):
     def __init__(self, indicator, gamma, epsilon, debug=False):
         self.gamma = gamma
         self.indicator = indicator
-        self.statesFound = 0
+        self.state_observations = 0
+        self.action_space = [(0, 0), (0, 1), (0, 2),
+                           (1, 0), (1, 1), (1, 2),
+                           (2, 0), (2, 1), (2, 2)]
         self.debug = debug
-        self.qTable = np.zeros(shape=[19668, 9])
+        self.qTable = np.zeros(shape=[self.state_observations , len(self.action_space)])
         self.stateIndexMap = {}
         self.epsilon = epsilon
         self.moves = []
-        self.max_epsilon = 0.85
+        self.max_epsilon = 0.9
         self.min_epsilon = 0.01
-        self.decay_rate = 0.01
-        self.discount_factor = 0.01
+        self.exploit_rate = 0.01
+        self.discount_factor = 0.8
         self.wins = 0
         self.draws = 0
-        self.allActions = [(0, 0), (0, 1), (0, 2),
-                           (1, 0), (1, 1), (1, 2),
-                           (2, 0), (2, 1), (2, 2)]
 
     # returns an action
     def choose_action(self, board):
@@ -78,23 +78,26 @@ class Agent(Player):
         stateIndex = self.stateIndexMap[self._hashBoardState(board)]
         if  random.random() < self.epsilon:
             # action from Q-table
+            qList = self.qTable[stateIndex].tolist()
+            action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
             if self.debug:
                 print('exploit')
                 print('available Q-values for state: ', self.qTable[stateIndex])
-                print('actionIndex: ', np.argmax(self.qTable[stateIndex]))
-            actionIndex = np.argmax(self.qTable[stateIndex])
-            chosenAction = self.allActions[actionIndex]
+                print('action candidates: ', action_candidates)
+            actionIndex = random.choice(action_candidates)
+            chosenAction = self.action_space[actionIndex]
         else:
             if self.debug:
                 print('explore, epsilon: ', self.epsilon)
             # random from available actions
             chosenAction = random.choice(self.possibilities(board))
-            actionIndex = self.allActions.index(chosenAction)
+            actionIndex = self.action_space.index(chosenAction)
             
         #self.epsilon = self.min_epsilon + \
         #    (self.max_epsilon-self.min_epsilon) * np.exp(-0.1*self.epsilon)
         if self.epsilon < self.max_epsilon:
-            self.epsilon += self.decay_rate            
+            self.epsilon += self.exploit_rate  
+            self.exploit_rate *= 1 + self.exploit_rate          
         
         self.moves.append((stateIndex, actionIndex))
         if self.debug:
@@ -120,6 +123,9 @@ class Agent(Player):
         if self.debug:
             print('------- end game eval -------------- \n', len(self.moves), self.moves)
         
+        rewardedMove = self.moves.pop()
+        self.qTable[rewardedMove[0]][rewardedMove[1]] = self.q_value_for(rewardedMove) + reward
+
         while len(self.moves) > 0:
             previousMove = self.moves.pop()
             self.qTable[previousMove[0]][previousMove[1]] = self.q_value_for(previousMove) + (reward * self.discount_factor)
@@ -142,8 +148,10 @@ class Agent(Player):
     def _setNewState(self, stateHash):
         #if self.debug:
         #print('new state found: ', stateHash)
-        self.stateIndexMap[stateHash] = self.statesFound
-        self.statesFound +=1
+        self.stateIndexMap[stateHash] = self.state_observations
+        new_row = np.zeros(shape = [1, len(self.action_space)])
+        self.qTable = np.append(self.qTable, new_row, axis=0)
+        self.state_observations +=1
 
     def _hashBoardState(self, state):
         normalizedState = [self._normalizeIndicators(x) for x in state.flatten().tolist()]

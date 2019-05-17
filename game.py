@@ -134,33 +134,40 @@ def play_game(player1, player2, training):
                 break
     return (winner)
 
+def train(iterations, player1, player2):
+    player1.debug = False
+    player2.debug = False
+    for i in range(30000):
+        play_game(player1, player2, True)
+        play_game(player2, player1, True)
+        if i % 1000 == 0:
+            print(i)
+            print('agent1 wins: ' + str(player1.wins),
+                'agent2 wins: ' + str(player2.wins))
+            print('draws ' + str(player1.draws))
+    player1.debug = True
+    player2.debug = True
+    if player1.wins > player2.wins:
+        player1.wins = 0
+        player1.draws = 0
+        return player1
+    else:
+        player2.wins = 0
+        player2.draws = 0
+        return player2
+
 # Driver Code
 human = Human(8)
-agent = Agent(1, 0.9, 0.1, False)
-agent2 = Agent(2, 0.9, 0.1, False)
-agent3 = Agent(3, 0.9, 0.1, False)
-for i in range(50000):
-    play_game(agent, agent2, True)
-    play_game(agent2, agent, True)
-    if i % 1000 == 0:
-        print(i)
-        print('agent1 wins: ' + str(agent.wins), 'agent2 wins: ' + str(agent2.wins))
-        print('draws ' + str(agent.draws))
-agent.set_epsilon(1)
-agent2.set_epsilon(1)
-agent.wins = 0
-agent.draws = 0
-for i in range(350):
-    play_game(agent, agent3, True)
-    play_game(agent3, agent, True)
-    if i % 10 == 0:
-        print(i)
-        print(' agent1 wins: ' + str(agent.wins),
-              ' agent3 wins: ' + str(agent3.wins))
-        print('draws ' + str(agent.draws))
-agent.debug = True
-agent2.debug = True
-agent3.debug = True
+agent = Agent(1, 0.6, 0.4, False)
+agent2 = Agent(2, 0.7, 0.2, False)
+agent3 = Agent(1, 0.8, 0.3, False)
+agent4 = Agent(2, 0.9, 0.1, False)
+winner1 = train(10000, agent, agent2)
+winner2 = train(10000, agent3, agent4)
+winner3 = train(10000, winner1, winner2)
+winner3.set_epsilon(1)
+winner3.set_epsilon(1)
 for i in range(700):
-    print("Winner is: " + str(play_game(agent3, human, False)))
-    print("Winner is: " + str(play_game(human, agent3, False)))
+    print("Winner is: " + str(play_game(winner3, human, False)))
+    print("Winner is: " + str(play_game(human, winner3, False)))
+
