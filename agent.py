@@ -5,7 +5,6 @@ import pickle
 
 # Check for empty places on board
 
-
 class Player:
     def __init__(self, indicator):
         self.indicator = indicator
@@ -53,8 +52,9 @@ class Human(Player):
 
 
 class Agent(Player):
-    def __init__(self, indicator, gamma, epsilon, debug=False):
-        self.gamma = gamma
+    def __init__(self, indicator, learning_rate, epsilon, debug=False):
+        self.learning_rate = learning_rate
+        self.min_learning_rate = 0.1
         self.indicator = indicator
         self.opponent_indicator = 9
         self.state_observations = 0
@@ -64,14 +64,14 @@ class Agent(Player):
         self.debug = debug
         self.qTable = np.zeros(shape=[self.state_observations , len(self.action_space)])
         self.stateIndexMap = {}
-        self.epsilon = epsilon
         self.moves = []
-        self.max_epsilon = 0.9
-        self.min_epsilon = 0.01
-        self.exploit_rate = 0.01
+        self.decay_rate = 0.9999
         self.discount_factor = 0.8
         self.wins = 0
         self.draws = 0
+        self.epsilon = epsilon
+        self.min_epsilon = 0.1
+        self.epsilonHistory = []
 
 
     def _future_simulated_reward(self, action, board):
@@ -131,8 +131,9 @@ class Agent(Player):
     def choose_action(self, board):
         chosenAction = ()
         actionIndex = 99
-        stateIndex = self.stateIndexMap[self._process_board_state(board)]
-        if  random.random() < self.epsilon:
+
+        stateIndex = self.stateIndexMap[self._hashBoardState(board)]
+        if  random.random() > self.epsilon:
             # action from Q-table
             qList = self.qTable[stateIndex].tolist()
             action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
@@ -152,19 +153,12 @@ class Agent(Player):
                 print('explore, epsilon: ', self.epsilon)
             # random from available actions
             chosenAction = random.choice(self.possibilities(board))
-            actionIndex = self.action_space.index(chosenAction)
-            
-        #self.epsilon = self.min_epsilon + \
-        #    (self.max_epsilon-self.min_epsilon) * np.exp(-0.1*self.epsilon)
-        if self.epsilon < self.max_epsilon:
-            self.epsilon += self.exploit_rate  
-            self.exploit_rate *= 1 + self.exploit_rate          
+            actionIndex = self.action_space.index(chosenAction)  
         
         self.moves.append((stateIndex, actionIndex))
         if self.debug:
             print('Agent chosen action: ', chosenAction)
-        return chosenAction
-    
+        return chosenAction    
 
     def save_agent(self, file_name=''):
         if not file_name:
@@ -188,23 +182,21 @@ class Agent(Player):
         lastMove = self.moves.pop()
         self.qTable[lastMove[0]][lastMove[1]] = self.q_value_for(lastMove) - 1000
         if self.debug:
-            print('agent bad move: ', lastMove)
-            print('updated q values for state: ', self.qTable[lastMove[0]])
+            print('agent bad move: ', self.action_space[lastMove[1]])
     
-    def end_game_evaluation(self, reward):
-        if self.debug:
-            print('------- end game eval -------------- \n', len(self.moves), self.moves)
-        
+    def end_game_evaluation(self, reward):        
         rewardedMove = self.moves.pop()
         self.qTable[rewardedMove[0]][rewardedMove[1]] = self.q_value_for(rewardedMove) + reward
 
         while len(self.moves) > 0:
+            reward *= self.discount_factor
             previousMove = self.moves.pop()
             self.qTable[previousMove[0]][previousMove[1]] = self.q_value_for(previousMove) + (reward * self.discount_factor)
-            reward = self.discount_factor * reward
-
-    def set_epsilon(self, epsilon):
-        self.epsilon = epsilon
+            #if self.learning_rate > self.min_learning_rate:
+            #    self.learning_rate *= self.decay_rate
+            if self.epsilon > self.min_epsilon:
+                self.epsilon *= self.decay_rate
+                self.epsilonHistory.append(self.epsilon)
 
     def q_value_for(self, move):
         return self.qTable[move[0]][move[1]]
@@ -246,13 +238,3 @@ class Agent(Player):
             self._setNewState(stateHash)
         
         return stateHash
-            
-
-
-    # def measureReward(self, action, state):
-    #     return 0
-
-    # def updateQ(self, action, state):
-    #     return 0
-
-    # def mapQvalueToAction(self, state)
