@@ -56,6 +56,7 @@ class Agent(Player):
         self.learning_rate = learning_rate
         self.min_learning_rate = 0.1
         self.indicator = indicator
+        self.opponent_indicator = 9
         self.state_observations = 0
         self.action_space = [(0, 0), (0, 1), (0, 2),
                            (1, 0), (1, 1), (1, 2),
@@ -72,15 +73,76 @@ class Agent(Player):
         self.min_epsilon = 0.1
         self.epsilonHistory = []
 
+
+    def _future_simulated_reward(self, action, board):
+        future_board = np.array(board, copy=True)
+
+        if future_board[action] == 0:
+            # we make our action
+            future_board[action] = self.indicator
+
+            # we make our opponents predicted action (based on our knowledge)
+            opponent_action = self._opponent_action_prediction(future_board)
+            if not opponent_action:
+                return 0
+
+            future_board[opponent_action] = self.opponent_indicator
+            
+            # our future predicted next state 
+            futureHash = self._hash_array(future_board)
+            if futureHash in self.stateIndexMap:
+
+                # we find our biggest q-value in our future state
+                stateIndex = self.stateIndexMap[futureHash]
+                qList = self.qTable[stateIndex].tolist()
+
+                return np.amax(qList)
+        return 0
+
+    
+    def _opponent_action_prediction(self, board):
+        chosenAction = ()
+        opponentHash = self._hash_array(board, True)
+        
+        if opponentHash in self.stateIndexMap:
+            stateIndex = self.stateIndexMap[opponentHash]
+
+            # action from Q-table
+            qList = self.qTable[stateIndex].tolist()
+            action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
+
+            actionIndex = random.choice(action_candidates)
+            chosenAction = self.action_space[actionIndex]
+        else:
+            if len(self.possibilities(board)) == 0:
+                return False
+
+            chosenAction = random.choice(self.possibilities(board))
+
+        if self.debug:
+            print('Simulated oppunent action: ', chosenAction)
+        return chosenAction
+
     # returns an action
     def choose_action(self, board):
         chosenAction = ()
         actionIndex = 99
-        stateIndex = self.stateIndexMap[self._hashBoardState(board)]
+
+        stateIndex = self.stateIndexMap[self._process_board_state(board)]
         if  random.random() > self.epsilon:
             # action from Q-table
             qList = self.qTable[stateIndex].tolist()
-            action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
+            weightedQList = []
+            
+            for index, value in enumerate(qList):
+                weightedQList.append(value + self.discount_factor * self._future_simulated_reward(
+                    self.action_space[index], board))
+
+            action_candidates = np.argwhere(
+                weightedQList == np.amax(weightedQList)).flatten()
+            
+            
+            
             if self.debug:
                 print('exploit')
                 print('available Q-values for state: ', self.qTable[stateIndex])
@@ -140,13 +202,13 @@ class Agent(Player):
     def q_value_for(self, move):
         return self.qTable[move[0]][move[1]]
 
-    def _normalizeIndicators(self, x):
+    def _normalizeIndicators(self, x, indicator, opponent_indicator):
         if x == 0:
             return x
-        elif x == self.indicator:
+        elif x == indicator:
              return -1
         else:
-            return 9
+            return opponent_indicator
 
     def _setNewState(self, stateHash):
         self.stateIndexMap[stateHash] = self.state_observations
@@ -156,9 +218,22 @@ class Agent(Player):
         self.qTable = np.append(self.qTable, new_row, axis=0)
         self.state_observations +=1
 
-    def _hashBoardState(self, state):
-        normalizedState = [self._normalizeIndicators(x) for x in state.flatten().tolist()]
+    def _hash_array(self, board, opponentHash=False):
+        indicator = self.indicator
+        opponent_indicator = self.opponent_indicator
+
+        if opponentHash:
+            indicator = self.opponent_indicator
+            opponent_indicator = self.indicator
+
+        normalizedState = [self._normalizeIndicators(
+            x, indicator, opponent_indicator) for x in board.flatten().tolist()]
         stateHash = ''.join(str(i) for i in normalizedState)
+
+        return stateHash
+
+    def _process_board_state(self, board):
+        stateHash = self._hash_array(board)
         
         if stateHash not in self.stateIndexMap:
             self._setNewState(stateHash)
