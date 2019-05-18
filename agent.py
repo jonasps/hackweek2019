@@ -65,13 +65,14 @@ class Agent(Player):
         self.qTable = np.zeros(shape=[self.state_observations , len(self.action_space)])
         self.stateIndexMap = {}
         self.moves = []
-        self.decay_rate = 0.999
+        self.decay_rate = 0.99995
         self.discount_factor = 0.8
         self.wins = 0
         self.draws = 0
         self.epsilon = epsilon
         self.min_epsilon = 0.1
         self.epsilonHistory = []
+        self.learning_rate_history = []
 
 
     def _future_simulated_reward(self, action, board):
@@ -86,7 +87,7 @@ class Agent(Player):
             if not opponent_action:
                 return 0
 
-            future_board[opponent_action] = self.opponent_indicator
+            future_board[opponent_action[0]] = self.opponent_indicator
             
             # our future predicted next state 
             futureHash = self._hash_array(future_board)
@@ -96,12 +97,13 @@ class Agent(Player):
                 stateIndex = self.stateIndexMap[futureHash]
                 qList = self.qTable[stateIndex].tolist()
 
-                return np.amax(qList)
+                return np.amax(qList) - opponent_action[1]
         return 0
 
     
     def _opponent_action_prediction(self, board):
         chosenAction = ()
+        max_q = 0
         opponentHash = self._hash_array(board, True)
         
         if opponentHash in self.stateIndexMap:
@@ -109,7 +111,11 @@ class Agent(Player):
 
             # action from Q-table
             qList = self.qTable[stateIndex].tolist()
-            action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
+            max_q = np.amax(qList)
+            action_candidates = np.argwhere(qList == max_q).flatten()
+
+            if len(action_candidates) > 1:
+                return False
 
             actionIndex = random.choice(action_candidates)
             chosenAction = self.action_space[actionIndex]
@@ -120,8 +126,8 @@ class Agent(Player):
             chosenAction = random.choice(self.possibilities(board))
 
         if self.debug:
-            print('Simulated oppunent action: ', chosenAction)
-        return chosenAction
+            print('Simulated opponent action: ', chosenAction)
+        return (chosenAction, max_q)
 
     # returns an action
     def choose_action(self, board):
@@ -131,17 +137,14 @@ class Agent(Player):
         stateIndex = self.stateIndexMap[self._process_board_state(board)]
         if  random.random() > self.epsilon:
             # action from Q-table
-            qList = self.qTable[stateIndex].tolist()
-            weightedQList = []
+            weightedQList = self.qTable[stateIndex].tolist()
+            #weightedQList = []
             
-            for index, value in enumerate(qList):
-                weightedQList.append(value + self.discount_factor * self._future_simulated_reward(
-                    self.action_space[index], board))
+            #for index, value in enumerate(qList):
+            #    weightedQList.append(value + self.discount_factor * self._future_simulated_reward(
+            #        self.action_space[index], board))
 
-            action_candidates = np.argwhere(
-                weightedQList == np.amax(weightedQList)).flatten()
-            
-            
+            action_candidates = np.argwhere(weightedQList == np.amax(weightedQList)).flatten()
             
             if self.debug:
                 print('exploit')
@@ -185,19 +188,25 @@ class Agent(Player):
         if self.debug:
             print('agent bad move: ', self.action_space[lastMove[1]])
     
-    def end_game_evaluation(self, reward):        
-        rewardedMove = self.moves.pop()
-        self.qTable[rewardedMove[0]][rewardedMove[1]] = self.q_value_for(rewardedMove) + reward
+    def end_game_evaluation(self, reward):  
+        if self.learning_rate > 0:      
+            reward *= self.learning_rate
+            rewardedMove = self.moves.pop()
+            self.qTable[rewardedMove[0]][rewardedMove[1]] = self.q_value_for(rewardedMove) + reward
 
-        while len(self.moves) > 0:
-            reward *= self.discount_factor
-            previousMove = self.moves.pop()
-            self.qTable[previousMove[0]][previousMove[1]] = self.q_value_for(previousMove) + (reward * self.discount_factor)
-            #if self.learning_rate > self.min_learning_rate:
-            #    self.learning_rate *= self.decay_rate
+            while len(self.moves) > 0:
+                reward *= self.discount_factor
+                previousMove = self.moves.pop()
+                self.qTable[previousMove[0]][previousMove[1]] = self.q_value_for(previousMove) + (reward * self.discount_factor)
+                
             if self.epsilon > self.min_epsilon:
                 self.epsilon *= self.decay_rate
                 self.epsilonHistory.append(self.epsilon)
+            
+            self.learning_rate *= self.decay_rate
+            self.learning_rate_history.append(self.learning_rate)
+        else:
+            self.moves.clear()
 
     def q_value_for(self, move):
         return self.qTable[move[0]][move[1]]

@@ -146,8 +146,6 @@ def train(iterations, player1, player2):
             print('agent{} wins: {}'.format(player1.indicator, str(player1.wins)),
                   'agent{} wins: {}'.format(player2.indicator, str(player2.wins)))
             print('draws {}'.format(str(player1.draws)))
-    player1.debug = True
-    player2.debug = True
     if player1.wins > player2.wins:
         player1.wins = 0
         player1.draws = 0
@@ -163,39 +161,69 @@ def test_agent(agent):
     human = Human(8)
     agent.debug = True
     agent.epsilon = 0
+    agent.learning_rate = 0
     for i in range(700):
         print(play_game(human, agent, False))
         print(play_game(agent, human, False))
 
+def test_against_the_best(iterations, agent):
+    #best_so_far = Agent(14, 0, 0, False)
+    #best_so_far.load_agent('best')
+    best_so_far = Agent(15, 0, 0, False)
+    best_so_far.load_agent('best2')
+    agent.epsilon = 0
+    agent.learning_rate = 0
+    agent.wins=0
+    for i in range(iterations):
+        play_game(agent, best_so_far, True)
+        play_game(best_so_far, agent, True)
+        if i % 200 == 0:
+            print(i)
+            print('previous best agent wins: {}'.format(str(best_so_far.wins)),
+                  'challenger agent wins: {}'.format(str(agent.wins)))
+            print('draws {}'.format(str(best_so_far.draws)))
+    print('best_so_far has: {}'.format(len(best_so_far.qTable)))
+    print('new agent has: {}'.format(len(agent.qTable)))
+
+def tournament():
+    agent = Agent(1, 0.6, 1)
+    agent2 = Agent(2, 0.7, 1)
+    agent3 = Agent(3, 0.8, 1)
+    agent4 = Agent(4, 0.9, 1)
+    agent10 = Agent(10, 0.7, 1)
+    agent11 = Agent(11, 0.8, 1)
+    agent12 = Agent(12, 0.9, 1)
+    agent13 = Agent(13, 1, 1)
+    semi1 = train(5000, agent, agent2)
+    semi2 = train(5000, agent3, agent4)
+    semi3 = train(5000, agent10, agent11)
+    semi4 = train(5000, agent12, agent13)
+    finalist1 = train(5000, semi1, semi2)
+    finalist2 = train(5000, semi3, semi4)
+    winner = train(5000, finalist1, finalist2)
+    return winner
+
+def plot_epsilon_and_learnRate(winner):
+    plt.plot(winner.learning_rate_history)
+    print('epsilon len: ', len(winner.learning_rate_history))
+    plt.ylabel('learning rate')
+    plt.show()
+
+    plt.plot(winner.epsilonHistory)
+    print('epsilon len: ', len(winner.epsilonHistory))
+    plt.ylabel('epsilon value')
+    plt.show()
+
 # Driver Code
-best_so_far = Agent(14, 0, 0, False)
-best_so_far.load_agent('best')
-#clone = Agent(3, 0, 0)
-#clone.load_agent('best')
-#for i in range(20):
-#    best_so_far.epsilon = 1
-#    train(2300, best_so_far, clone)
-#test_agent(best_so_far)
 
-agent = Agent(1, 0.6, 1)
-agent2 = Agent(2, 0.7, 1)
-agent3 = Agent(3, 0.8, 1)
-agent4 = Agent(4, 0.9, 1)
-agent10 = Agent(10, 0.7, 1)
-agent11 = Agent(11, 0.8, 1)
-agent12 = Agent(12, 0.9, 1)
-agent13 = Agent(13, 1, 1)
-semi1 = train(5000, agent, agent2)
-semi2 = train(5000, agent3, agent4)
-semi3 = train(5000, agent10, agent11)
-semi4 = train(5000, agent12, agent13)
-finalist1 = train(10000, semi1, semi2)
-finalist2 = train(10000, semi3, semi4)
-winner = train(50000, finalist1, finalist2)
-bob = train(50000, winner, best_so_far)
-plt.plot(winner.epsilonHistory)
-print('epsilon len: ', len(winner.epsilonHistory))
-plt.ylabel('epsilon value')
-plt.show()
+agent1 = Agent(1, 1, 1)
+agent2 = Agent(2, 1, 1)
+winner = train(100000, agent1, agent2)
+test_against_the_best(2000, winner)
+plot_epsilon_and_learnRate(winner)
+test_agent(winner)
 
-test_agent(bob)
+winner = tournament()
+#bob = train(5000, winner, best_so_far2)
+
+
