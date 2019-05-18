@@ -132,11 +132,16 @@ class Agent(Player):
         if  random.random() > self.epsilon:
             # action from Q-table
             qList = self.qTable[stateIndex].tolist()
-            action_candidates = np.argwhere(qList == np.amax(qList)).flatten()
+            weightedQList = []
             
-            for a in action_candidates:
-                self._future_simulated_reward(
-                    self.action_space[a], board)
+            for index, value in enumerate(qList):
+                weightedQList.append(value + self.discount_factor * self._future_simulated_reward(
+                    self.action_space[index], board))
+
+            action_candidates = np.argwhere(
+                weightedQList == np.amax(weightedQList)).flatten()
+            
+            
             
             if self.debug:
                 print('exploit')
