@@ -166,22 +166,20 @@ def test_agent(agent):
         print(play_game(human, agent, False))
         print(play_game(agent, human, False))
 
-def test_against_the_best(iterations, agent):
+def test_against_the_best(iterations, agent, learn_rate, improvisation):
     #best_so_far = Agent(14, 0, 0, False)
     #best_so_far.load_agent('best')
-    best_so_far = Agent(15, 0, 0, False)
+    best_so_far = Agent(15, 0, improvisation, False)
     best_so_far.load_agent('best2')
     agent.epsilon = 0
-    agent.learning_rate = 0
+    agent.learning_rate = learn_rate
     agent.wins=0
     for i in range(iterations):
         play_game(agent, best_so_far, True)
         play_game(best_so_far, agent, True)
-        if i % 200 == 0:
-            print(i)
-            print('previous best agent wins: {}'.format(str(best_so_far.wins)),
-                  'challenger agent wins: {}'.format(str(agent.wins)))
-            print('draws {}'.format(str(best_so_far.draws)))
+    print('previous best agent wins: {}'.format(str(best_so_far.wins)),
+          'challenger agent wins: {}'.format(str(agent.wins)))
+    print('draws {}'.format(str(best_so_far.draws)))
     print('best_so_far has: {}'.format(len(best_so_far.qTable)))
     print('new agent has: {}'.format(len(agent.qTable)))
 
@@ -219,7 +217,8 @@ def plot_epsilon_and_learnRate(winner):
 agent1 = Agent(1, 1, 1)
 agent2 = Agent(2, 1, 1)
 winner = train(100000, agent1, agent2)
-test_against_the_best(2000, winner)
+test_against_the_best(50000, winner, 0.5, 0.3)
+test_against_the_best(50000, winner, 0, 0.3)
 plot_epsilon_and_learnRate(winner)
 test_agent(winner)
 
