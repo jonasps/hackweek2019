@@ -64,7 +64,7 @@ class Agent(Player):
         self.qTable = np.zeros(shape=[self.state_observations , len(self.action_space)])
         self.stateIndexMap = {}
         self.moves = []
-        self.decay_rate = 0.9999
+        self.decay_rate = 0.999
         self.discount_factor = 0.8
         self.wins = 0
         self.draws = 0

@@ -168,9 +168,14 @@ def test_agent(agent):
         print(play_game(agent, human, False))
 
 # Driver Code
-best_so_far = Agent(10, 0, 1, False)
-best_so_far.load_agent(10)
-test_agent(best_so_far)
+best_so_far = Agent(14, 0, 0, False)
+best_so_far.load_agent('best')
+#clone = Agent(3, 0, 0)
+#clone.load_agent('best')
+#for i in range(20):
+#    best_so_far.epsilon = 1
+#    train(2300, best_so_far, clone)
+#test_agent(best_so_far)
 
 agent = Agent(1, 0.6, 1)
 agent2 = Agent(2, 0.7, 1)
@@ -187,9 +192,10 @@ semi4 = train(5000, agent12, agent13)
 finalist1 = train(10000, semi1, semi2)
 finalist2 = train(10000, semi3, semi4)
 winner = train(50000, finalist1, finalist2)
+bob = train(50000, winner, best_so_far)
 plt.plot(winner.epsilonHistory)
 print('epsilon len: ', len(winner.epsilonHistory))
 plt.ylabel('epsilon value')
 plt.show()
 
-test_agent(winner)
+test_agent(bob)
